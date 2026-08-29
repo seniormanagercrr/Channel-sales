@@ -1,0 +1,1805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Channel Sales Dashboard — Servotech</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --ink:#141726;
+    --ink-soft:#5B6280;
+    --paper:#F3F5FC;
+    --panel:#FFFFFF;
+    --line:#E7EAF5;
+    --navy:#1B2A4A;
+    --navy-deep:#0D1526;
+    --slate:#334166;
+    --shadow: 0 1px 2px rgba(20,23,38,0.04), 0 12px 28px -14px rgba(20,23,38,0.18);
+    --shadow-hover: 0 4px 10px rgba(20,23,38,0.06), 0 22px 40px -16px rgba(20,23,38,0.26);
+    --up:#2E9E6E;
+    --down:#D6553F;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 500px at 90% -10%, rgba(106,90,205,0.10), transparent 60%),
+      radial-gradient(900px 500px at -10% 0%, rgba(62,156,143,0.08), transparent 60%),
+      var(--paper);
+    color:var(--ink);
+    font-family:'Inter',-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .display{font-family:'Space Grotesk',sans-serif;}
+  svg{display:block;}
+
+  /* ---------- Sample banner ---------- */
+  .sample-banner{
+    background:repeating-linear-gradient(135deg, #FFF4DE, #FFF4DE 12px, #FDEAC4 12px, #FDEAC4 24px);
+    color:#7A5211;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    font-weight:600;
+    text-align:center;
+    padding:7px;
+    letter-spacing:0.03em;
+    border-bottom:1px solid #EFCE8B;
+  }
+
+  /* ---------- Header ---------- */
+  header.top{
+    background:linear-gradient(135deg, var(--navy-deep) 0%, var(--navy) 55%, var(--slate) 100%);
+    color:#fff;
+    padding:30px 32px 26px;
+    position:relative;
+    overflow:hidden;
+  }
+  header.top::before{
+    content:"";
+    position:absolute; inset:0;
+    background:
+      radial-gradient(320px 320px at 12% 120%, rgba(232,163,61,0.16), transparent 65%),
+      radial-gradient(380px 380px at 96% -20%, rgba(106,90,205,0.28), transparent 65%),
+      radial-gradient(260px 260px at 60% -40%, rgba(62,156,143,0.18), transparent 65%);
+    pointer-events:none;
+  }
+  .top-inner{position:relative; z-index:1;}
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    color:#B9C3E0;
+    margin:0 0 8px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:#E8A33D;box-shadow:0 0 0 4px rgba(232,163,61,0.25);}
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:30px;
+    margin:0 0 8px;
+    letter-spacing:-0.015em;
+  }
+  .sub{
+    color:#C7CFE8;
+    font-size:13.5px;
+    max-width:680px;
+    line-height:1.55;
+    margin:0;
+  }
+  .header-actions{margin-top:18px;}
+  .page-link-btn{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    color:#fff;
+    text-decoration:none;
+    background:linear-gradient(135deg, rgba(232,163,61,0.25), rgba(106,90,205,0.25));
+    border:1px solid rgba(255,255,255,0.25);
+    padding:9px 16px;
+    border-radius:10px;
+    transition:background .15s ease, transform .15s ease;
+  }
+  .page-link-btn:hover{background:linear-gradient(135deg, rgba(232,163,61,0.4), rgba(106,90,205,0.4)); transform:translateY(-1px);}
+  .page-link-btn svg{width:15px;height:15px;}
+  .upload-btn{
+    background:linear-gradient(135deg, rgba(62,156,143,0.28), rgba(76,141,255,0.22));
+    cursor:pointer;
+    font-family:'Space Grotesk',sans-serif;
+    margin-left:10px;
+  }
+  .upload-btn:hover{background:linear-gradient(135deg, rgba(62,156,143,0.45), rgba(76,141,255,0.38));}
+  .upload-status{
+    margin-left:12px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    color:#8FD4C7;
+  }
+  .upload-status.err{color:#EDA9C4;}
+
+  /* ---------- Hero KPI strip ---------- */
+  .kpi-wrap{
+    background:rgba(255,255,255,0.08);
+    border-radius:14px;
+    margin-top:22px;
+    overflow:hidden;
+    backdrop-filter:blur(2px);
+  }
+  .kpi-strip{
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+    gap:1px;
+  }
+  .kpi-strip.headcount{grid-template-columns:repeat(4,1fr);}
+  .kpi-divider{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px; text-transform:uppercase; letter-spacing:0.1em;
+    color:#8B93B8;
+    padding:9px 18px 3px;
+    background:rgba(255,255,255,0.03);
+  }
+  .kpi{
+    background:rgba(255,255,255,0.045);
+    padding:16px 18px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .kpi .icon{
+    width:38px;height:38px;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    flex:none;
+  }
+  .kpi .icon svg{width:19px;height:19px;}
+  .kpi .num{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:21px;color:#fff;line-height:1.1;}
+  .kpi .lbl{font-size:10.8px;color:#AEB8DA;margin-top:2px;}
+  .kpi .breakdown{font-size:9.5px;color:#8B93B8;margin-top:1px;font-family:'JetBrains Mono',monospace;}
+
+  main{max-width:1400px; margin:0 auto; padding:26px 32px 60px;}
+
+  /* ---------- Top Performers spotlight ---------- */
+  .spotlight-section{
+    background:linear-gradient(180deg, #fff 0%, #FBFCFF 100%);
+    border:1px solid var(--line);
+    border-radius:16px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    margin-bottom:8px;
+  }
+  .spotlight-grid{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+  }
+  .spot-card{
+    background:transparent;
+    padding:15px 16px 13px;
+    position:relative;
+    overflow:hidden;
+    transition:background .15s ease;
+    border-right:1px solid var(--line);
+  }
+  .spot-card:last-child{border-right:none;}
+  .spot-card:hover{background:rgba(255,255,255,0.7);}
+  .spot-card::before{
+    content:"";
+    position:absolute; top:0; left:0; right:0; height:3px;
+    background:var(--sc-dark, #8A5A0F);
+    opacity:0.85;
+  }
+  .spot-card::after{
+    content:"";
+    position:absolute; top:-45%; right:-30%;
+    width:90px;height:90px;border-radius:50%;
+    background:var(--sc-glow, radial-gradient(circle, rgba(232,163,61,0.25), transparent 70%));
+  }
+  .spot-top-row{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:10px;
+    position:relative; z-index:1;
+  }
+  .spot-icon-badge{
+    width:30px; height:30px; border-radius:9px;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--sc-soft,#FCEFD8);
+    color:var(--sc-dark,#8A5A0F);
+    flex:none;
+  }
+  .spot-icon-badge svg{width:15px;height:15px;}
+  .spot-rank{
+    display:inline-flex; align-items:center; gap:3px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px; letter-spacing:0.02em;
+    color:#B5791E;
+    font-weight:700;
+  }
+  .spot-rank svg{width:11px;height:11px;}
+  .spot-role{
+    font-size:9px; color:var(--ink-soft);
+    text-transform:uppercase; letter-spacing:0.05em;
+    font-family:'JetBrains Mono',monospace;
+    margin-bottom:3px;
+    position:relative; z-index:1;
+    font-weight:600;
+  }
+  .spot-name{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:13.5px;
+    margin-bottom:9px;
+    line-height:1.25;
+    position:relative; z-index:1;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    color:var(--ink);
+  }
+  .spot-metric{
+    display:flex; align-items:baseline; gap:5px;
+    position:relative; z-index:1;
+    padding-top:8px;
+    border-top:1px dashed var(--line);
+  }
+  .spot-metric .big{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:18px;
+    color:var(--sc-dark,#8A5A0F);
+    letter-spacing:-0.01em;
+  }
+  .spot-metric .small{font-size:9px; color:var(--ink-soft); line-height:1.3;}
+  .spot-zone{
+    margin-top:6px;
+    font-size:9px;
+    color:var(--ink-soft);
+    position:relative; z-index:1;
+  }
+  .spot-zone b{color:var(--ink);}
+
+  /* ---------- Section label ---------- */
+  .section-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.12em;
+    color:var(--ink-soft);
+    margin:8px 0 14px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .section-label::after{content:""; flex:1; height:1px; background:var(--line);}
+  .section-label .hint{font-family:'Inter',sans-serif; text-transform:none; letter-spacing:0; font-size:11.5px; color:#9AA1BC; font-weight:400;}
+
+  /* ---------- Backend head cards ---------- */
+  .head-section{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    margin-bottom:8px;
+  }
+  .head-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+  }
+  .head-card{
+    background:var(--panel);
+    padding:18px 20px;
+    cursor:pointer;
+    transition:background .18s ease;
+    position:relative;
+    border-right:1px solid var(--line);
+    display:flex;
+    flex-direction:column;
+  }
+  .head-card:last-child{border-right:none;}
+  .head-card::before{
+    content:"";
+    position:absolute; top:0; left:0; right:0; height:4px;
+    background:var(--hc, linear-gradient(90deg,#6A5ACD,#4C8DFF));
+    opacity:0.9;
+  }
+  .head-card:hover{background:#FAFBFF;}
+  .head-card.active{background:linear-gradient(180deg,#F7F8FE 0%, #fff 130px);}
+  .head-top{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .avatar{
+    width:38px;height:38px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;color:#fff;
+    background:var(--hc, linear-gradient(135deg,#6A5ACD,#4C8DFF));
+    flex:none;
+  }
+  .head-card .role{
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--ink-soft);
+  }
+  .head-card .name{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:17px;
+    line-height:1.15;
+  }
+  .zones-covered{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    margin-bottom:10px;
+    display:flex;
+    gap:5px;
+    flex-wrap:wrap;
+  }
+  .zone-chip{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:2px 8px;
+    font-size:10px;
+    font-weight:600;
+    color:var(--slate);
+  }
+  .head-mini-stats{display:grid; grid-template-columns:repeat(2,1fr); gap:8px 12px; border-top:1px solid var(--line); padding-top:10px;}
+  .hm-item{display:flex; flex-direction:column; gap:1px;}
+  .hm-item .k{font-size:9.8px; color:var(--ink-soft); line-height:1.25;}
+  .hm-item .v{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px; color:var(--ink);}
+  .hm-item.wide{grid-column:1 / -1; display:flex; flex-direction:row; justify-content:space-between; align-items:baseline; background:var(--paper); border-radius:8px; padding:6px 10px;}
+  .hm-item.wide .k{font-size:10.2px;}
+  .hm-item.wide .v{font-size:13.5px;}
+
+  .target-block{margin-top:10px; padding-top:10px; border-top:1px solid var(--line); margin-top:auto;}
+  .target-block-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px;}
+  .target-block .lbl{font-size:9.8px; color:var(--ink-soft); font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:0.03em;}
+  .target-block .pct{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:16px;}
+  .target-track{height:8px; border-radius:5px; background:#EEF1F8; overflow:hidden;}
+  .target-fill{height:100%; border-radius:5px; background:var(--hc, linear-gradient(90deg,#6A5ACD,#4C8DFF));}
+  .target-caption{display:flex; justify-content:space-between; margin-top:4px; font-size:9.7px; color:var(--ink-soft); font-family:'JetBrains Mono',monospace;}
+  .target-caption b{color:var(--ink);}
+
+  /* ---------- Zone grid ---------- */
+  .zone-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(400px,1fr));
+    gap:18px;
+  }
+  .zone-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    transition:transform .18s ease, box-shadow .18s ease;
+  }
+  .zone-card:hover{transform:translateY(-3px); box-shadow:var(--shadow-hover);}
+  .zone-card-head{
+    padding:18px 20px 14px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    position:relative;
+  }
+  .zone-card-head::after{
+    content:"";
+    position:absolute; left:20px; right:20px; bottom:0; height:1px;
+    background:var(--line);
+  }
+  .zone-name-row{display:flex; align-items:center; gap:10px;}
+  .zone-swatch{width:10px;height:28px;border-radius:4px; background:var(--zc,#334166); flex:none;}
+  .zone-name{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:18px;
+  }
+  .zone-states{
+    font-size:11px;
+    color:var(--ink-soft);
+    margin-top:3px;
+    line-height:1.5;
+    max-width:280px;
+  }
+  .head-tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    padding:4px 10px;
+    border-radius:20px;
+    background:var(--zc-soft,#EAE6FA);
+    color:var(--zc-dark,#4B3A9E);
+    font-weight:700;
+    white-space:nowrap;
+  }
+
+  .subtab-row{
+    display:flex;
+    padding:12px 20px 0;
+    gap:6px;
+  }
+  .subtab{
+    flex:1;
+    text-align:center;
+    padding:8px 0;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:12px;
+    color:var(--ink-soft);
+    cursor:pointer;
+    border-radius:8px 8px 0 0;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    border-bottom:2px solid transparent;
+  }
+  .subtab svg{width:13px;height:13px;}
+  .subtab.active{color:var(--zc-dark,#334166); border-bottom-color:var(--zc,#334166); background:var(--zc-soft,#F3F5FC);}
+
+  .metric-body{padding:14px 20px 20px;}
+
+  /* NBD layout: ring + stats */
+  .nbd-top{display:flex; gap:18px; align-items:center; margin-bottom:14px;}
+  .ring-wrap{position:relative; flex:none;}
+  .ring-center{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+  .ring-center .num{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:20px;}
+  .ring-center .lbl{font-size:8.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.04em;}
+  .nbd-stats{flex:1;}
+  .stat-line{display:flex; justify-content:space-between; align-items:baseline; padding:5px 0;}
+  .stat-line .k{font-size:11.5px; color:var(--ink-soft);}
+  .stat-line .v{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:15px;}
+
+  .leader-box{
+    margin-top:8px;
+    background:var(--paper);
+    border-radius:10px;
+    padding:10px 13px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-size:12px;
+    border-left:3px solid var(--zc,#334166);
+  }
+  .leader-box + .leader-box{margin-top:7px;}
+  .leader-box .tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    display:block;
+    margin-bottom:3px;
+    letter-spacing:0.04em;
+  }
+  .leader-box .amt{font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--zc-dark,#334166); font-size:13px;}
+
+  /* CRR layout */
+  .crr-top{display:flex; gap:18px; align-items:center; margin-bottom:14px;}
+  .active-legend{display:flex; gap:14px; margin-top:8px;}
+  .active-legend div{display:flex; align-items:center; gap:6px; font-size:11px; color:var(--ink-soft);}
+  .leg-dot{width:9px;height:9px;border-radius:50%;}
+
+  .trend-box{
+    display:flex; justify-content:space-between; align-items:center;
+    background:var(--paper); border-radius:10px; padding:11px 14px; margin-bottom:8px;
+  }
+  .trend-box .lbl{font-size:10.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.03em; font-family:'JetBrains Mono',monospace;}
+  .trend-box .vals{display:flex; align-items:baseline; gap:8px; margin-top:3px;}
+  .trend-box .cur{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:17px;}
+  .trend-box .prev{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-soft);}
+  .trend-pill{
+    font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700;
+    padding:4px 9px; border-radius:20px; display:flex; align-items:center; gap:3px;
+  }
+  .trend-pill.up{background:#E4F5EC; color:var(--up);}
+  .trend-pill.down{background:#FBE7E2; color:var(--down);}
+  .trend-pill svg{width:11px;height:11px;}
+
+  footer{
+    max-width:1400px;
+    margin:0 auto;
+    padding:0 32px 40px;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    line-height:1.6;
+  }
+  footer code{background:#EDF0F8; padding:1px 6px; border-radius:4px; font-family:'JetBrains Mono',monospace;}
+
+  @media (max-width: 640px){
+    .head-grid{grid-template-columns:1fr;}
+    .head-card{border-right:none; border-bottom:1px solid var(--line);}
+    .head-card:last-child{border-bottom:none;}
+    .spotlight-grid{grid-template-columns:repeat(2,1fr);}
+    .spot-card{border-right:none; border-bottom:1px solid var(--line);}
+    .spot-card:nth-last-child(-n+1){border-bottom:none;}
+  }
+  @media (max-width: 980px){
+    .kpi-strip{grid-template-columns:repeat(2,1fr);}
+    main{padding:16px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="sample-banner">⚠ SAMPLE / PLACEHOLDER DATA — figures below are illustrative only, not live sales numbers</div>
+
+<header class="top">
+  <div class="top-inner">
+    <p class="eyebrow"><span class="dot"></span>Servotech &middot; Channel Sales</p>
+    <h1>Backend Head Performance — NBD &amp; CRR</h1>
+    <p class="sub">Organisation view across 3 Backend Heads and 7 zones. Select a Backend Head to filter, or browse everything below. Each zone card flips between New Business Development (NBD) and Customer Retention (CRR) views.</p>
+    <div class="kpi-wrap">
+      <div class="kpi-strip" id="kpiStrip"></div>
+      <div class="kpi-divider">Team Strength</div>
+      <div class="kpi-strip headcount" id="kpiHeadcountStrip"></div>
+    </div>
+    <div class="header-actions">
+      <a class="page-link-btn" href="ASM_Performance_by_Zone.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17.2" cy="9" r="2.6"/><path d="M15.5 14.2c2.9.4 5 2.4 5 5.6"/></svg>
+        View ASM Performance by Zone (NBD Collection)
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </a>
+      <button class="page-link-btn upload-btn" id="uploadBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4"/><path d="M6 10l6-6 6 6"/><path d="M4 20h16"/></svg>
+        Upload Data (Excel)
+      </button>
+      <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none;">
+      <span class="upload-status" id="uploadStatus"></span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="section-label">Top Performers <span class="hint">— best across all zones, company-wide</span></div>
+  <div class="spotlight-section">
+    <div class="spotlight-grid" id="spotlightGrid"></div>
+  </div>
+
+  <div class="section-label">Backend Heads <span class="hint">— click to filter zones below</span></div>
+  <div class="head-section">
+    <div class="head-grid" id="headGrid"></div>
+  </div>
+
+  <div class="section-label" id="zoneSectionLabel">All Zones</div>
+  <div class="zone-grid" id="zoneGrid"></div>
+</main>
+
+<footer>
+  <p><b>Note:</b> All onboarding counts, collection amounts, active/inactive splits, and top-performer figures on this page are randomly generated placeholders for layout/demo purposes — not sourced from live CRM or collection data. ZSM / ASM / NBD Coordinator names are shown as role placeholders (e.g. <code>ASM — East #1</code>), not real employees, since no actual performance data was provided. Send real figures and I'll wire them into this same layout.</p>
+</footer>
+
+<script id="payload-data" type="application/json">[
+  {
+    "head": "Piyush",
+    "zone": "East",
+    "states": [
+      "Bihar",
+      "Jharkhand",
+      "Odisha",
+      "West Bengal",
+      "Assam",
+      "Tripura"
+    ],
+    "nbd": {
+      "newBusiness": 58,
+      "collectionTillDate": 55.6,
+      "topZSM": {
+        "name": "ZSM \u2014 East #1",
+        "collection": 15.8
+      },
+      "topASM": {
+        "name": "ASM \u2014 East #1",
+        "collection": 6.5
+      }
+    },
+    "crr": {
+      "active": 77,
+      "inactive": 18,
+      "collectionLastMonth": 101.2,
+      "collectionCurrentMonth": 131.2,
+      "topCoordinator": {
+        "name": "NBD Coordinator \u2014 East #1",
+        "pct": 70.5
+      },
+      "topCRRCoordinator": {
+        "name": "CRR Coordinator \u2014 East #1",
+        "pct": 72.5
+      }
+    },
+    "totalCollection": 186.8,
+    "billingAmount": 234.0,
+    "target": 248.6,
+    "targetCompletionPct": 75.1,
+    "headcount": {
+      "zsm": 3,
+      "asm": 8,
+      "rsm": 5,
+      "nbdCoordinator": 3,
+      "crrCoordinator": 2
+    },
+    "openOrders": {
+      "amount": 33.5,
+      "count": 21
+    },
+    "asmRoster": [
+      {
+        "name": "ASM \u2014 East #1",
+        "collection": 14.8,
+        "target": 26.5,
+        "achievementPct": 55.8
+      },
+      {
+        "name": "ASM \u2014 East #2",
+        "collection": 12.0,
+        "target": 19.1,
+        "achievementPct": 62.8
+      },
+      {
+        "name": "ASM \u2014 East #3",
+        "collection": 9.8,
+        "target": 11.9,
+        "achievementPct": 82.4
+      },
+      {
+        "name": "ASM \u2014 East #4",
+        "collection": 4.7,
+        "target": 4.6,
+        "achievementPct": 102.2
+      },
+      {
+        "name": "ASM \u2014 East #5",
+        "collection": 4.3,
+        "target": 6.6,
+        "achievementPct": 65.2
+      },
+      {
+        "name": "ASM \u2014 East #6",
+        "collection": 3.9,
+        "target": 6.2,
+        "achievementPct": 62.9
+      },
+      {
+        "name": "ASM \u2014 East #7",
+        "collection": 3.1,
+        "target": 4.4,
+        "achievementPct": 70.5
+      },
+      {
+        "name": "ASM \u2014 East #8",
+        "collection": 3.0,
+        "target": 2.8,
+        "achievementPct": 107.1
+      }
+    ]
+  },
+  {
+    "head": "Piyush",
+    "zone": "North 1",
+    "states": [
+      "Punjab",
+      "Haryana",
+      "Chandigarh",
+      "Jammu and Kashmir",
+      "Himachal Pradesh"
+    ],
+    "nbd": {
+      "newBusiness": 45,
+      "collectionTillDate": 40.9,
+      "topZSM": {
+        "name": "ZSM \u2014 North 1 #1",
+        "collection": 7.9
+      },
+      "topASM": {
+        "name": "ASM \u2014 North 1 #1",
+        "collection": 3.2
+      }
+    },
+    "crr": {
+      "active": 134,
+      "inactive": 80,
+      "collectionLastMonth": 43.9,
+      "collectionCurrentMonth": 51.6,
+      "topCoordinator": {
+        "name": "NBD Coordinator \u2014 North 1 #1",
+        "pct": 83.8
+      },
+      "topCRRCoordinator": {
+        "name": "CRR Coordinator \u2014 North 1 #1",
+        "pct": 66.8
+      }
+    },
+    "totalCollection": 92.5,
+    "billingAmount": 106.8,
+    "target": 124.1,
+    "targetCompletionPct": 74.5,
+    "headcount": {
+      "zsm": 2,
+      "asm": 14,
+      "rsm": 2,
+      "nbdCoordinator": 4,
+      "crrCoordinator": 1
+    },
+    "openOrders": {
+      "amount": 21.4,
+      "count": 18
+    },
+    "asmRoster": [
+      {
+        "name": "ASM \u2014 North 1 #1",
+        "collection": 4.7,
+        "target": 7.2,
+        "achievementPct": 65.3
+      },
+      {
+        "name": "ASM \u2014 North 1 #2",
+        "collection": 4.2,
+        "target": 3.9,
+        "achievementPct": 107.7
+      },
+      {
+        "name": "ASM \u2014 North 1 #3",
+        "collection": 4.0,
+        "target": 3.9,
+        "achievementPct": 102.6
+      },
+      {
+        "name": "ASM \u2014 North 1 #4",
+        "collection": 3.3,
+        "target": 5.1,
+        "achievementPct": 64.7
+      },
+      {
+        "name": "ASM \u2014 North 1 #5",
+        "collection": 3.0,
+        "target": 3.2,
+        "achievementPct": 93.8
+      },
+      {
+        "name": "ASM \u2014 North 1 #6",
+        "collection": 2.8,
+        "target": 3.2,
+        "achievementPct": 87.5
+      },
+      {
+        "name": "ASM \u2014 North 1 #7",
+        "collection": 2.8,
+        "target": 3.3,
+        "achievementPct": 84.8
+      },
+      {
+        "name": "ASM \u2014 North 1 #8",
+        "collection": 2.7,
+        "target": 2.2,
+        "achievementPct": 122.7
+      },
+      {
+        "name": "ASM \u2014 North 1 #9",
+        "collection": 2.6,
+        "target": 4.2,
+        "achievementPct": 61.9
+      },
+      {
+        "name": "ASM \u2014 North 1 #10",
+        "collection": 2.3,
+        "target": 4.1,
+        "achievementPct": 56.1
+      },
+      {
+        "name": "ASM \u2014 North 1 #11",
+        "collection": 2.3,
+        "target": 1.9,
+        "achievementPct": 121.1
+      },
+      {
+        "name": "ASM \u2014 North 1 #12",
+        "collection": 2.1,
+        "target": 2.5,
+        "achievementPct": 84.0
+      },
+      {
+        "name": "ASM \u2014 North 1 #13",
+        "collection": 2.1,
+        "target": 3.0,
+        "achievementPct": 70.0
+      },
+      {
+        "name": "ASM \u2014 North 1 #14",
+        "collection": 2.0,
+        "target": 2.6,
+        "achievementPct": 76.9
+      }
+    ]
+  },
+  {
+    "head": "Dikshit",
+    "zone": "North 2",
+    "states": [
+      "UP East",
+      "UP West",
+      "Uttarakhand"
+    ],
+    "nbd": {
+      "newBusiness": 32,
+      "collectionTillDate": 118.1,
+      "topZSM": {
+        "name": "ZSM \u2014 North 2 #1",
+        "collection": 25.9
+      },
+      "topASM": {
+        "name": "ASM \u2014 North 2 #1",
+        "collection": 14.7
+      }
+    },
+    "crr": {
+      "active": 210,
+      "inactive": 44,
+      "collectionLastMonth": 103.8,
+      "collectionCurrentMonth": 105.9,
+      "topCoordinator": {
+        "name": "NBD Coordinator \u2014 North 2 #1",
+        "pct": 72.5
+      },
+      "topCRRCoordinator": {
+        "name": "CRR Coordinator \u2014 North 2 #1",
+        "pct": 64.3
+      }
+    },
+    "totalCollection": 224.0,
+    "billingAmount": 286.5,
+    "target": 397.8,
+    "targetCompletionPct": 56.3,
+    "headcount": {
+      "zsm": 4,
+      "asm": 6,
+      "rsm": 3,
+      "nbdCoordinator": 1,
+      "crrCoordinator": 1
+    },
+    "openOrders": {
+      "amount": 41.0,
+      "count": 22
+    },
+    "asmRoster": [
+      {
+        "name": "ASM \u2014 North 2 #1",
+        "collection": 54.5,
+        "target": 67.7,
+        "achievementPct": 80.5
+      },
+      {
+        "name": "ASM \u2014 North 2 #2",
+        "collection": 16.9,
+        "target": 13.9,
+        "achievementPct": 121.6
+      },
+      {
+        "name": "ASM \u2014 North 2 #3",
+        "collection": 13.9,
+        "target": 19.9,
+        "achievementPct": 69.8
+      },
+      {
+        "name": "ASM \u2014 North 2 #4",
+        "collection": 13.1,
+        "target": 18.7,
+        "achievementPct": 70.1
+      },
+      {
+        "name": "ASM \u2014 North 2 #5",
+        "collection": 9.9,
+        "target": 10.3,
+        "achievementPct": 96.1
+      },
+      {
+        "name": "ASM \u2014 North 2 #6",
+        "collection": 9.8,
+        "target": 10.5,
+        "achievementPct": 93.3
+      }
+    ]
+  },
+  {
+    "head": "Dikshit",
+    "zone": "West",
+    "states": [
+      "Rajasthan",
+      "Gujarat"
+    ],
+    "nbd": {
+      "newBusiness": 39,
+      "collectionTillDate": 53.9,
+      "topZSM": {
+        "name": "ZSM \u2014 West #1",
+        "collection": 12.6
+      },
+      "topASM": {
+        "name": "ASM \u2014 West #1",
+        "collection": 5.5
+      }
+    },
+    "crr": {
+      "active": 114,
+      "inactive": 34,
+      "collectionLastMonth": 116.9,
+      "collectionCurrentMonth": 142.0,
+      "topCoordinator": {
+        "name": "NBD Coordinator \u2014 West #1",
+        "pct": 83.6
+      },
+      "topCRRCoordinator": {
+        "name": "CRR Coordinator \u2014 West #1",
+        "pct": 92.7
+      }
+    },
+    "totalCollection": 195.9,
+    "billingAmount": 258.8,
+    "target": 283.0,
+    "targetCompletionPct": 69.2,
+    "headcount": {
+      "zsm": 2,
+      "asm": 12,
+      "rsm": 5,
+      "nbdCoordinator": 3,
+      "crrCoordinator": 1
+    },
+    "openOrders": {
+      "amount": 27.6,
+      "count": 20
+    },
+    "asmRoster": [
+      {
+        "name": "ASM \u2014 West #1",
+        "collection": 6.3,
+        "target": 5.2,
+        "achievementPct": 121.2
+      },
+      {
+        "name": "ASM \u2014 West #2",
+        "collection": 5.6,
+        "target": 4.9,
+        "achievementPct": 114.3
+      },
+      {
+        "name": "ASM \u2014 West #3",
+        "collection": 5.5,
+        "target": 6.9,
+        "achievementPct": 79.7
+      },
+      {
+        "name": "ASM \u2014 West #4",
+        "collection": 5.1,
+        "target": 7.4,
+        "achievementPct": 68.9
+      },
+      {
+        "name": "ASM \u2014 West #5",
+        "collection": 5.0,
+        "target": 4.4,
+        "achievementPct": 113.6
+      },
+      {
+        "name": "ASM \u2014 West #6",
+        "collection": 4.4,
+        "target": 3.5,
+        "achievementPct": 125.7
+      },
+      {
+        "name": "ASM \u2014 West #7",
+        "collection": 4.3,
+        "target": 7.5,
+        "achievementPct": 57.3
+      },
+      {
+        "name": "ASM \u2014 West #8",
+        "collection": 3.8,
+        "target": 3.6,
+        "achievementPct": 105.6
+      },
+      {
+        "name": "ASM \u2014 West #9",
+        "collection": 3.8,
+        "target": 3.3,
+        "achievementPct": 115.2
+      },
+      {
+        "name": "ASM \u2014 West #10",
+        "collection": 3.5,
+        "target": 3.5,
+        "achievementPct": 100.0
+      },
+      {
+        "name": "ASM \u2014 West #11",
+        "collection": 3.4,
+        "target": 4.8,
+        "achievementPct": 70.8
+      },
+      {
+        "name": "ASM \u2014 West #12",
+        "collection": 3.2,
+        "target": 2.9,
+        "achievementPct": 110.3
+      }
+    ]
+  },
+  {
+    "head": "Dikshit",
+    "zone": "NCR",
+    "states": [
+      "Delhi",
+      "New Delhi",
+      "Gurgaon",
+      "Noida",
+      "Greater Noida",
+      "Faridabad"
+    ],
+    "nbd": {
+      "newBusiness": 42,
+      "collectionTillDate": 49.6,
+      "topZSM": {
+        "name": "ZSM \u2014 NCR #1",
+        "collection": 11.0
+      },
+      "topASM": {
+        "name": "ASM \u2014 NCR #1",
+        "collection": 5.6
+      }
+    },
+    "crr": {
+      "active": 117,
+      "inactive": 35,
+      "collectionLastMonth": 104.5,
+      "collectionCurrentMonth": 91.2,
+      "topCoordinator": {
+        "name": "NBD Coordinator \u2014 NCR #1",
+        "pct": 74.6
+      },
+      "topCRRCoordinator": {
+        "name": "CRR Coordinator \u2014 NCR #1",
+        "pct": 80.0
+      }
+    },
+    "totalCollection": 140.8,
+    "billingAmount": 168.1,
+    "target": 179.0,
+    "targetCompletionPct": 78.7,
+    "headcount": {
+      "zsm": 2,
+      "asm": 7,
+      "rsm": 5,
+      "nbdCoordinator": 2,
+      "crrCoordinator": 1
+    },
+    "openOrders": {
+      "amount": 24.6,
+      "count": 9
+    },
+    "asmRoster": [
+      {
+        "name": "ASM \u2014 NCR #1",
+        "collection": 13.0,
+        "target": 12.3,
+        "achievementPct": 105.7
+      },
+      {
+        "name": "ASM \u2014 NCR #2",
+        "collection": 8.3,
+        "target": 12.1,
+        "achievementPct": 68.6
+      },
+      {
+        "name": "ASM \u2014 NCR #3",
+        "collection": 6.2,
+        "target": 6.2,
+        "achievementPct": 100.0
+      },
+      {
+        "name": "ASM \u2014 NCR #4",
+        "collection": 5.8,
+        "target": 8.2,
+        "achievementPct": 70.7
+      },
+      {
+        "name": "ASM \u2014 NCR #5",
+        "collection": 5.5,
+        "target": 9.5,
+        "achievementPct": 57.9
+      },
+      {
+        "name": "ASM \u2014 NCR #6",
+        "collection": 5.5,
+        "target": 7.0,
+        "achievementPct": 78.6
+      },
+      {
+        "name": "ASM \u2014 NCR #7",
+        "collection": 5.3,
+        "target": 6.8,
+        "achievementPct": 77.9
+      }
+    ]
+  },
+  {
+    "head": "Tushar",
+    "zone": "South",
+    "states": [
+      "Andhra Pradesh",
+      "Telangana",
+      "Tamil Nadu",
+      "Maharashtra"
+    ],
+    "nbd": {
+      "newBusiness": 36,
+      "collectionTillDate": 217.3,
+      "topZSM": {
+        "name": "ZSM \u2014 South #1",
+        "collection": 65.1
+      },
+      "topASM": {
+        "name": "ASM \u2014 South #1",
+        "collection": 36.9
+      }
+    },
+    "crr": {
+      "active": 108,
+      "inactive": 49,
+      "collectionLastMonth": 96.3,
+      "collectionCurrentMonth": 99.4,
+      "topCoordinator": {
+        "name": "NBD Coordinator \u2014 South #1",
+        "pct": 78.7
+      },
+      "topCRRCoordinator": {
+        "name": "CRR Coordinator \u2014 South #1",
+        "pct": 84.2
+      }
+    },
+    "totalCollection": 316.7,
+    "billingAmount": 360.7,
+    "target": 469.9,
+    "targetCompletionPct": 67.4,
+    "headcount": {
+      "zsm": 4,
+      "asm": 7,
+      "rsm": 3,
+      "nbdCoordinator": 1,
+      "crrCoordinator": 4
+    },
+    "openOrders": {
+      "amount": 33.6,
+      "count": 13
+    },
+    "asmRoster": [
+      {
+        "name": "ASM \u2014 South #1",
+        "collection": 49.2,
+        "target": 59.5,
+        "achievementPct": 82.7
+      },
+      {
+        "name": "ASM \u2014 South #2",
+        "collection": 43.8,
+        "target": 43.7,
+        "achievementPct": 100.2
+      },
+      {
+        "name": "ASM \u2014 South #3",
+        "collection": 29.6,
+        "target": 26.1,
+        "achievementPct": 113.4
+      },
+      {
+        "name": "ASM \u2014 South #4",
+        "collection": 24.6,
+        "target": 20.1,
+        "achievementPct": 122.4
+      },
+      {
+        "name": "ASM \u2014 South #5",
+        "collection": 23.8,
+        "target": 19.3,
+        "achievementPct": 123.3
+      },
+      {
+        "name": "ASM \u2014 South #6",
+        "collection": 23.3,
+        "target": 18.7,
+        "achievementPct": 124.6
+      },
+      {
+        "name": "ASM \u2014 South #7",
+        "collection": 23.0,
+        "target": 20.9,
+        "achievementPct": 110.0
+      }
+    ]
+  },
+  {
+    "head": "Tushar",
+    "zone": "Central",
+    "states": [
+      "Madhya Pradesh",
+      "Chhattisgarh"
+    ],
+    "nbd": {
+      "newBusiness": 31,
+      "collectionTillDate": 159.0,
+      "topZSM": {
+        "name": "ZSM \u2014 Central #1",
+        "collection": 44.2
+      },
+      "topASM": {
+        "name": "ASM \u2014 Central #1",
+        "collection": 23.0
+      }
+    },
+    "crr": {
+      "active": 60,
+      "inactive": 18,
+      "collectionLastMonth": 40.5,
+      "collectionCurrentMonth": 49.2,
+      "topCoordinator": {
+        "name": "NBD Coordinator \u2014 Central #1",
+        "pct": 72.7
+      },
+      "topCRRCoordinator": {
+        "name": "CRR Coordinator \u2014 Central #1",
+        "pct": 79.0
+      }
+    },
+    "totalCollection": 208.2,
+    "billingAmount": 226.3,
+    "target": 260.1,
+    "targetCompletionPct": 80.0,
+    "headcount": {
+      "zsm": 2,
+      "asm": 15,
+      "rsm": 5,
+      "nbdCoordinator": 4,
+      "crrCoordinator": 1
+    },
+    "openOrders": {
+      "amount": 22.6,
+      "count": 21
+    },
+    "asmRoster": [
+      {
+        "name": "ASM \u2014 Central #1",
+        "collection": 35.4,
+        "target": 46.3,
+        "achievementPct": 76.5
+      },
+      {
+        "name": "ASM \u2014 Central #2",
+        "collection": 22.9,
+        "target": 34.0,
+        "achievementPct": 67.4
+      },
+      {
+        "name": "ASM \u2014 Central #3",
+        "collection": 18.4,
+        "target": 18.6,
+        "achievementPct": 98.9
+      },
+      {
+        "name": "ASM \u2014 Central #4",
+        "collection": 12.1,
+        "target": 13.0,
+        "achievementPct": 93.1
+      },
+      {
+        "name": "ASM \u2014 Central #5",
+        "collection": 10.7,
+        "target": 10.5,
+        "achievementPct": 101.9
+      },
+      {
+        "name": "ASM \u2014 Central #6",
+        "collection": 9.0,
+        "target": 14.6,
+        "achievementPct": 61.6
+      },
+      {
+        "name": "ASM \u2014 Central #7",
+        "collection": 7.5,
+        "target": 10.9,
+        "achievementPct": 68.8
+      },
+      {
+        "name": "ASM \u2014 Central #8",
+        "collection": 7.1,
+        "target": 5.9,
+        "achievementPct": 120.3
+      },
+      {
+        "name": "ASM \u2014 Central #9",
+        "collection": 6.1,
+        "target": 6.3,
+        "achievementPct": 96.8
+      },
+      {
+        "name": "ASM \u2014 Central #10",
+        "collection": 5.4,
+        "target": 5.2,
+        "achievementPct": 103.8
+      },
+      {
+        "name": "ASM \u2014 Central #11",
+        "collection": 5.3,
+        "target": 8.6,
+        "achievementPct": 61.6
+      },
+      {
+        "name": "ASM \u2014 Central #12",
+        "collection": 5.0,
+        "target": 6.0,
+        "achievementPct": 83.3
+      },
+      {
+        "name": "ASM \u2014 Central #13",
+        "collection": 4.8,
+        "target": 4.0,
+        "achievementPct": 120.0
+      },
+      {
+        "name": "ASM \u2014 Central #14",
+        "collection": 4.7,
+        "target": 4.7,
+        "achievementPct": 100.0
+      },
+      {
+        "name": "ASM \u2014 Central #15",
+        "collection": 4.6,
+        "target": 3.7,
+        "achievementPct": 124.3
+      }
+    ]
+  }
+]</script>
+<script>(function(){
+  let zones = JSON.parse(document.getElementById('payload-data').textContent);
+  let heads = [...new Set(zones.map(z => z.head))];
+  let activeHead = null;
+
+  const fmtL = (n) => `₹${n.toLocaleString('en-IN')}L`;
+
+  // ---------- Color identity per zone ----------
+  const palette = {
+    'East':     {c:'#E8A33D', dark:'#8A5A0F', soft:'#FCEFD8'},
+    'North 1':  {c:'#4C8DFF', dark:'#26518F', soft:'#E4EDFF'},
+    'North 2':  {c:'#6A5ACD', dark:'#4B3A9E', soft:'#EAE6FA'},
+    'West':     {c:'#E2725B', dark:'#9A3E2C', soft:'#FBE3DE'},
+    'NCR':      {c:'#3E9C8F', dark:'#1F6D5F', soft:'#DDF1EC'},
+    'South':    {c:'#D6558C', dark:'#943A61', soft:'#FBE0EB'},
+    'Central':  {c:'#5FA463', dark:'#3B7A3F', soft:'#E4F3E5'},
+  };
+  const headGradients = {
+    'Piyush':   'linear-gradient(135deg,#E8A33D,#4C8DFF)',
+    'Dikshit':  'linear-gradient(135deg,#6A5ACD,#3E9C8F)',
+    'Tushar':   'linear-gradient(135deg,#D6558C,#5FA463)',
+  };
+  const headSolid = {'Piyush':'#4C8DFF','Dikshit':'#6A5ACD','Tushar':'#D6558C'};
+
+  // ---------- Icons ----------
+  const icons = {
+    target: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>`,
+    coins: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.66 3.13 3 7 3s7-1.34 7-3V6"/><path d="M5 12v6c0 1.66 3.13 3 7 3s7-1.34 7-3v-6"/></svg>`,
+    users: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17.2" cy="9" r="2.6"/><path d="M15.5 14.2c2.9.4 5 2.4 5 5.6"/></svg>`,
+    refresh: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 15.3-6.4L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.3 6.4L3 16"/><path d="M3 21v-5h5"/></svg>`,
+    award: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5.5"/><path d="M8.2 13 6.5 21l5.5-3 5.5 3-1.7-8"/></svg>`,
+    up: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 15l6-6 6 6"/></svg>`,
+    down: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>`,
+    layers: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>`,
+    briefcase: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2.5" y="7" width="19" height="13" rx="2"/><path d="M8 7V5.5A2.5 2.5 0 0 1 10.5 3h3A2.5 2.5 0 0 1 16 5.5V7"/></svg>`,
+    crown: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4 3 5-6 5 6 4-3-2 11H5L3 8z"/></svg>`,
+    shield: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg>`,
+    person: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>`,
+    pin: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s7-7.5 7-12.5A7 7 0 0 0 5 9.5C5 14.5 12 22 12 22z"/><circle cx="12" cy="9.5" r="2.5"/></svg>`,
+    headset: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="2.5" y="13" width="5" height="7" rx="1.5"/><rect x="16.5" y="13" width="5" height="7" rx="1.5"/><path d="M19.5 20v.5a3 3 0 0 1-3 3h-3.2"/></svg>`,
+    flag: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21V4"/><path d="M5 4h13l-3 4.5L18 13H5"/></svg>`,
+  };
+
+  // ---------- SVG ring chart ----------
+  function ringSVG(pct, color, size, stroke, centerNum, centerLbl){
+    const r = (size - stroke) / 2;
+    const c = 2 * Math.PI * r;
+    const off = c * (1 - pct/100);
+    return `
+      <div class="ring-wrap" style="width:${size}px;height:${size}px;">
+        <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+          <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#EEF1F8" stroke-width="${stroke}"/>
+          <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}"
+            stroke-dasharray="${c}" stroke-dashoffset="${off}" stroke-linecap="round"
+            transform="rotate(-90 ${size/2} ${size/2})"/>
+        </svg>
+        <div class="ring-center">
+          <div class="num" style="color:${color}">${centerNum}</div>
+          <div class="lbl">${centerLbl}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function trendPill(cur, prev){
+    const diff = cur - prev;
+    const pct = prev ? Math.abs(diff/prev*100).toFixed(1) : '0.0';
+    const isUp = diff >= 0;
+    return `<span class="trend-pill ${isUp?'up':'down'}">${isUp?icons.up:icons.down}${pct}%</span>`;
+  }
+
+  // ---------- Hero KPI strip ----------
+  function renderKPIs(){
+    const totalNB = zones.reduce((s,z)=>s+z.nbd.newBusiness,0);
+    const totalColl = zones.reduce((s,z)=>s+z.nbd.collectionTillDate,0);
+    const totalActive = zones.reduce((s,z)=>s+z.crr.active,0);
+    const totalInactive = zones.reduce((s,z)=>s+z.crr.inactive,0);
+
+    // Leading zone — highest collection percentage (total collection vs target)
+    const leadingZone = zones.reduce((a,b) => {
+      const pctA = a.totalCollection / a.target * 100;
+      const pctB = b.totalCollection / b.target * 100;
+      return pctB > pctA ? b : a;
+    });
+    const leadingPct = Math.round(leadingZone.totalCollection / leadingZone.target * 100 * 10) / 10;
+
+    const kpis = [
+      {icon:icons.layers, bg:'rgba(232,163,61,0.22)', fg:'#F2C169', num: zones.length, lbl:'Zones'},
+      {icon:icons.briefcase, bg:'rgba(76,141,255,0.22)', fg:'#8FB3FF', num: heads.length, lbl:'Backend Heads'},
+      {icon:icons.target, bg:'rgba(106,90,205,0.25)', fg:'#B3A7F0', num: totalNB, lbl:'New Business (NBD)'},
+      {icon:icons.coins, bg:'rgba(62,156,143,0.25)', fg:'#8FD4C7', num: fmtL(Math.round(totalColl)), lbl:'Collection till date'},
+      {icon:icons.users, bg:'rgba(214,85,140,0.22)', fg:'#EDA9C4', num: `${totalActive}/${totalInactive}`, lbl:'Active / Inactive'},
+      {icon:icons.flag, bg:'rgba(232,163,61,0.22)', fg:'#F2C169', num: `${leadingPct}%`, lbl:`Leading Zone — ${leadingZone.zone}`, sub:`ZSM: ${leadingZone.nbd.topZSM.name}`},
+    ];
+    document.getElementById('kpiStrip').innerHTML = kpis.map(k => `
+      <div class="kpi">
+        <div class="icon" style="background:${k.bg}; color:${k.fg}">${k.icon}</div>
+        <div><div class="num">${k.num}</div><div class="lbl">${k.lbl}</div>${k.sub?`<div class="breakdown">${k.sub}</div>`:''}</div>
+      </div>
+    `).join('');
+
+    // Team headcount strip — total ZSMs, ASMs, RSMs, Backend Coordinators (NBD + CRR)
+    const hc = zones.reduce((acc,z) => {
+      acc.zsm += z.headcount.zsm;
+      acc.asm += z.headcount.asm;
+      acc.rsm += z.headcount.rsm;
+      acc.nbdCoordinator += z.headcount.nbdCoordinator;
+      acc.crrCoordinator += z.headcount.crrCoordinator;
+      return acc;
+    }, {zsm:0, asm:0, rsm:0, nbdCoordinator:0, crrCoordinator:0});
+    const backendCoordinatorTotal = hc.nbdCoordinator + hc.crrCoordinator;
+
+    const hcKpis = [
+      {icon:icons.shield, bg:'rgba(232,163,61,0.22)', fg:'#F2C169', num: hc.zsm, lbl:'Total ZSMs', sub:null},
+      {icon:icons.person, bg:'rgba(76,141,255,0.22)', fg:'#8FB3FF', num: hc.asm, lbl:'Total ASMs', sub:null},
+      {icon:icons.pin, bg:'rgba(214,85,140,0.22)', fg:'#EDA9C4', num: hc.rsm, lbl:'Total RSMs', sub:null},
+      {icon:icons.headset, bg:'rgba(62,156,143,0.25)', fg:'#8FD4C7', num: backendCoordinatorTotal, lbl:'Backend Coordinators',
+        sub:`${hc.nbdCoordinator} NBD + ${hc.crrCoordinator} CRR`},
+    ];
+    document.getElementById('kpiHeadcountStrip').innerHTML = hcKpis.map(k => `
+      <div class="kpi">
+        <div class="icon" style="background:${k.bg}; color:${k.fg}">${k.icon}</div>
+        <div><div class="num">${k.num}</div><div class="lbl">${k.lbl}</div>${k.sub?`<div class="breakdown">${k.sub}</div>`:''}</div>
+      </div>
+    `).join('');
+  }
+
+  // ---------- Top Performers spotlight ----------
+  function renderSpotlight(){
+    // Top Backend Head — by total collection (NBD+CRR) across their zones
+    const headTotals = {};
+    heads.forEach(h => headTotals[h] = zones.filter(z=>z.head===h).reduce((s,z)=>s+z.totalCollection,0));
+    const topHead = Object.keys(headTotals).reduce((a,b)=> headTotals[a] > headTotals[b] ? a : b);
+
+    // Top ZSM / ASM / NBD Coordinator / CRR Coordinator — best single figure across all zones
+    const topZSMZone = zones.reduce((a,b)=> a.nbd.topZSM.collection > b.nbd.topZSM.collection ? a : b);
+    const topASMZone = zones.reduce((a,b)=> a.nbd.topASM.collection > b.nbd.topASM.collection ? a : b);
+    const topCoordZone = zones.reduce((a,b)=> a.crr.topCoordinator.pct > b.crr.topCoordinator.pct ? a : b);
+    const topCRRCoordZone = zones.reduce((a,b)=> a.crr.topCRRCoordinator.pct > b.crr.topCRRCoordinator.pct ? a : b);
+
+    const cards = [
+      {
+        role:'Backend Head', name: topHead, icon: icons.crown,
+        metricBig: fmtL(Math.round(headTotals[topHead])), metricSmall: 'total collection',
+        zoneNote: `Leads ${zones.filter(z=>z.head===topHead).map(z=>z.zone).join(', ')}`,
+        soft:'#E4EDFF', dark:'#26518F', glow:'radial-gradient(circle, rgba(76,141,255,0.25), transparent 70%)'
+      },
+      {
+        role:'ZSM', name: topZSMZone.nbd.topZSM.name, icon: icons.shield,
+        metricBig: fmtL(topZSMZone.nbd.topZSM.collection), metricSmall: 'collection',
+        zoneNote: `From the <b>${topZSMZone.zone}</b> zone`,
+        soft: palette[topZSMZone.zone].soft, dark: palette[topZSMZone.zone].dark,
+        glow:`radial-gradient(circle, ${palette[topZSMZone.zone].c}40, transparent 70%)`
+      },
+      {
+        role:'ASM', name: topASMZone.nbd.topASM.name, icon: icons.person,
+        metricBig: fmtL(topASMZone.nbd.topASM.collection), metricSmall: 'collection',
+        zoneNote: `From the <b>${topASMZone.zone}</b> zone`,
+        soft: palette[topASMZone.zone].soft, dark: palette[topASMZone.zone].dark,
+        glow:`radial-gradient(circle, ${palette[topASMZone.zone].c}40, transparent 70%)`
+      },
+      {
+        role:'NBD Coordinator', name: topCoordZone.crr.topCoordinator.name, icon: icons.target,
+        metricBig: `${topCoordZone.crr.topCoordinator.pct}%`, metricSmall: 'collection %',
+        zoneNote: `From the <b>${topCoordZone.zone}</b> zone`,
+        soft: palette[topCoordZone.zone].soft, dark: palette[topCoordZone.zone].dark,
+        glow:`radial-gradient(circle, ${palette[topCoordZone.zone].c}40, transparent 70%)`
+      },
+      {
+        role:'CRR Coordinator', name: topCRRCoordZone.crr.topCRRCoordinator.name, icon: icons.refresh,
+        metricBig: `${topCRRCoordZone.crr.topCRRCoordinator.pct}%`, metricSmall: 'coll. from active dist.',
+        zoneNote: `From the <b>${topCRRCoordZone.zone}</b> zone`,
+        soft: palette[topCRRCoordZone.zone].soft, dark: palette[topCRRCoordZone.zone].dark,
+        glow:`radial-gradient(circle, ${palette[topCRRCoordZone.zone].c}40, transparent 70%)`
+      },
+    ];
+
+    document.getElementById('spotlightGrid').innerHTML = cards.map(c => `
+      <div class="spot-card" style="--sc-soft:${c.soft}; --sc-dark:${c.dark}; --sc-glow:${c.glow};">
+        <div class="spot-top-row">
+          <div class="spot-icon-badge">${c.icon}</div>
+          <div class="spot-rank">${icons.crown} #1</div>
+        </div>
+        <div class="spot-role">${c.role}</div>
+        <div class="spot-name">${c.name}</div>
+        <div class="spot-metric"><span class="big">${c.metricBig}</span><span class="small">${c.metricSmall}</span></div>
+        <div class="spot-zone">${c.zoneNote}</div>
+      </div>
+    `).join('');
+  }
+
+  // ---------- Backend head cards ----------
+  function renderHeadCards(){
+    const grid = document.getElementById('headGrid');
+    grid.innerHTML = heads.map(h => {
+      const hz = zones.filter(z => z.head === h);
+      const nbdCollection = hz.reduce((s,z)=>s+z.nbd.collectionTillDate,0);
+      const crrCollection = hz.reduce((s,z)=>s+z.crr.collectionCurrentMonth,0);
+      const totalCollection = nbdCollection + crrCollection;
+      const billing = hz.reduce((s,z)=>s+z.billingAmount,0);
+      const target = hz.reduce((s,z)=>s+z.target,0);
+      const openOrdersAmount = hz.reduce((s,z)=>s+z.openOrders.amount,0);
+      const openOrdersCount = hz.reduce((s,z)=>s+z.openOrders.count,0);
+      const completionPct = Math.round(totalCollection/target*100*10)/10;
+      const isActive = activeHead === h;
+      const initials = h.slice(0,2).toUpperCase();
+      const barColor = completionPct >= 90 ? '#2E9E6E' : completionPct >= 60 ? headSolid[h] : '#D6553F';
+      return `
+        <div class="head-card ${isActive?'active':''}" data-head="${h}"
+             style="--hc:${headGradients[h]}; --hc-solid:${headSolid[h]};">
+          <div class="head-top">
+            <div class="avatar">${initials}</div>
+            <div>
+              <div class="role">Backend Head</div>
+              <div class="name">${h}</div>
+            </div>
+          </div>
+          <div class="zones-covered">
+            ${hz.map(z=>`<span class="zone-chip">${z.zone}</span>`).join('')}
+          </div>
+          <div class="head-mini-stats">
+            <div class="hm-item wide"><span class="k">Collection (NBD+CRR)</span><span class="v">${fmtL(Math.round(totalCollection))}</span></div>
+            <div class="hm-item"><span class="k">NBD Collection</span><span class="v">${fmtL(Math.round(nbdCollection))}</span></div>
+            <div class="hm-item"><span class="k">CRR Collection</span><span class="v">${fmtL(Math.round(crrCollection))}</span></div>
+            <div class="hm-item"><span class="k">Billing</span><span class="v">${fmtL(Math.round(billing))}</span></div>
+            <div class="hm-item"><span class="k">Open Orders Amount</span><span class="v">${fmtL(Math.round(openOrdersAmount))}</span></div>
+            <div class="hm-item wide"><span class="k">Open Order Count</span><span class="v">${openOrdersCount}</span></div>
+          </div>
+          <div class="target-block">
+            <div class="target-block-top">
+              <span class="lbl">Target Achievement (actuals)</span>
+              <span class="pct" style="color:${barColor}">${completionPct}%</span>
+            </div>
+            <div class="target-track"><div class="target-fill" style="width:${Math.min(100,completionPct)}%; background:${barColor};"></div></div>
+            <div class="target-caption"><span>Actual: <b>${fmtL(Math.round(totalCollection))}</b></span><span>Overall Target: <b>${fmtL(Math.round(target))}</b></span></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    grid.querySelectorAll('.head-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const h = card.dataset.head;
+        activeHead = (activeHead === h) ? null : h;
+        renderAll();
+      });
+    });
+  }
+
+  // ---------- Zone cards ----------
+  const zoneSubtab = {};
+  zones.forEach(z => zoneSubtab[z.zone] = 'nbd');
+
+  function renderZoneCards(){
+    const label = document.getElementById('zoneSectionLabel');
+    label.innerHTML = (activeHead ? `Zones under ${activeHead}` : 'All Zones') + ` <span class="hint">— ${(activeHead? zones.filter(z=>z.head===activeHead):zones).length} shown</span>`;
+
+    const list = activeHead ? zones.filter(z => z.head === activeHead) : zones;
+    const grid = document.getElementById('zoneGrid');
+
+    grid.innerHTML = list.map(z => {
+      const col = palette[z.zone] || {c:'#334166',dark:'#334166',soft:'#EEF1F8'};
+      const tab = zoneSubtab[z.zone];
+      const totalDealers = z.crr.active + z.crr.inactive;
+      const activePct = Math.round(z.crr.active / totalDealers * 100);
+
+      const avgCollPerNewBiz = z.nbd.newBusiness ? (z.nbd.collectionTillDate / z.nbd.newBusiness) : 0;
+
+      const nbdView = `
+        <div class="nbd-top">
+          ${ringSVG(Math.min(100, Math.round(z.nbd.newBusiness/70*100)), col.c, 84, 9, z.nbd.newBusiness, 'NEW BIZ')}
+          <div class="nbd-stats">
+            <div class="stat-line"><span class="k">Collection till date</span><span class="v" style="color:${col.dark}">${fmtL(z.nbd.collectionTillDate)}</span></div>
+            <div class="stat-line"><span class="k">Count of new business</span><span class="v">${z.nbd.newBusiness}</span></div>
+            <div class="stat-line"><span class="k">Avg. Collection per New Biz</span><span class="v" style="color:${col.dark}">${fmtL(Math.round(avgCollPerNewBiz*10)/10)}</span></div>
+          </div>
+        </div>
+      `;
+
+      const crrView = `
+        <div class="crr-top">
+          ${ringSVG(activePct, col.c, 84, 9, activePct+'%', 'ACTIVE DIST.')}
+          <div class="nbd-stats">
+            <div class="stat-line"><span class="k">Active Distributors</span><span class="v" style="color:${col.dark}">${z.crr.active}</span></div>
+            <div class="stat-line"><span class="k">Renewed distributor</span><span class="v" style="color:var(--down)">${z.crr.inactive}</span></div>
+            <div class="active-legend">
+              <div><span class="leg-dot" style="background:${col.c}"></span>Active Distributors</div>
+              <div><span class="leg-dot" style="background:#EEF1F8;border:1px solid #ddd"></span>Renewed distributor</div>
+            </div>
+          </div>
+        </div>
+        <div class="trend-box">
+          <div>
+            <div class="lbl">Collection — current vs last month</div>
+            <div class="vals"><span class="cur">${fmtL(z.crr.collectionCurrentMonth)}</span><span class="prev">was ${fmtL(z.crr.collectionLastMonth)}</span></div>
+          </div>
+          ${trendPill(z.crr.collectionCurrentMonth, z.crr.collectionLastMonth)}
+        </div>
+      `;
+
+      return `
+        <div class="zone-card">
+          <div class="zone-card-head">
+            <div class="zone-name-row">
+              <div class="zone-swatch" style="--zc:${col.c}; background:${col.c};"></div>
+              <div>
+                <div class="zone-name">${z.zone}</div>
+                <div class="zone-states">${z.states.join(', ')}</div>
+              </div>
+            </div>
+            <span class="head-tag" style="--zc-soft:${col.soft}; --zc-dark:${col.dark}; background:${col.soft}; color:${col.dark};">${z.head}</span>
+          </div>
+          <div class="subtab-row">
+            <div class="subtab ${tab==='nbd'?'active':''}" data-zone="${z.zone}" data-tab="nbd"
+                 style="--zc:${col.c}; --zc-dark:${col.dark}; --zc-soft:${col.soft};">${icons.target} NBD</div>
+            <div class="subtab ${tab==='crr'?'active':''}" data-zone="${z.zone}" data-tab="crr"
+                 style="--zc:${col.c}; --zc-dark:${col.dark}; --zc-soft:${col.soft};">${icons.refresh} CRR</div>
+          </div>
+          <div class="metric-body">
+            ${tab==='nbd' ? nbdView : crrView}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    grid.querySelectorAll('.subtab').forEach(el => {
+      el.addEventListener('click', () => {
+        zoneSubtab[el.dataset.zone] = el.dataset.tab;
+        renderZoneCards();
+      });
+    });
+  }
+
+  function renderAll(){
+    renderKPIs();
+    renderSpotlight();
+    renderHeadCards();
+    renderZoneCards();
+  }
+
+  // ---------- Excel upload: parse workbook into the same data shape ----------
+  function parseWorkbookToZones(wb){
+    const zoneSheet = wb.Sheets['Zones'];
+    const asmSheet = wb.Sheets['ASM Roster'];
+    if(!zoneSheet) throw new Error("No sheet named 'Zones' found in the workbook.");
+    const zoneRows = XLSX.utils.sheet_to_json(zoneSheet, {defval:0});
+    const asmRows = asmSheet ? XLSX.utils.sheet_to_json(asmSheet, {defval:0}) : [];
+
+    const newZones = zoneRows.map(r => {
+      const zoneName = String(r['Zone']).trim();
+      const nbdCollectionTillDate = Number(r['NBD_CollectionTillDate']) || 0;
+      const crrCollectionCurrentMonth = Number(r['CRR_CollectionCurrentMonth']) || 0;
+      const target = Number(r['Target']) || 0;
+      const totalCollection = nbdCollectionTillDate + crrCollectionCurrentMonth;
+
+      const roster = asmRows
+        .filter(a => String(a['Zone']).trim() === zoneName)
+        .map(a => {
+          const collection = Number(a['Collection']) || 0;
+          const asmTarget = Number(a['Target']) || 0;
+          return {
+            name: String(a['ASM_Name']),
+            collection: collection,
+            target: asmTarget,
+            achievementPct: asmTarget ? Math.round(collection/asmTarget*1000)/10 : 0
+          };
+        });
+
+      return {
+        head: String(r['Head']).trim(),
+        zone: zoneName,
+        states: String(r['States']||'').split(',').map(s=>s.trim()).filter(Boolean),
+        nbd: {
+          newBusiness: Number(r['NBD_NewBusiness']) || 0,
+          collectionTillDate: nbdCollectionTillDate,
+          topZSM: { name: String(r['NBD_TopZSM_Name']||''), collection: Number(r['NBD_TopZSM_Collection'])||0 },
+          topASM: { name: String(r['NBD_TopASM_Name']||''), collection: Number(r['NBD_TopASM_Collection'])||0 },
+        },
+        crr: {
+          active: Number(r['CRR_Active']) || 0,
+          inactive: Number(r['CRR_Inactive']) || 0,
+          collectionLastMonth: Number(r['CRR_CollectionLastMonth']) || 0,
+          collectionCurrentMonth: crrCollectionCurrentMonth,
+          topCoordinator: { name: String(r['CRR_TopNBDCoordinator_Name']||''), pct: Number(r['CRR_TopNBDCoordinator_Pct'])||0 },
+          topCRRCoordinator: { name: String(r['CRR_TopCRRCoordinator_Name']||''), pct: Number(r['CRR_TopCRRCoordinator_Pct'])||0 },
+        },
+        totalCollection: totalCollection,
+        billingAmount: Number(r['BillingAmount']) || 0,
+        target: target,
+        targetCompletionPct: target ? Math.round(totalCollection/target*1000)/10 : 0,
+        headcount: {
+          zsm: Number(r['Headcount_ZSM']) || 0,
+          asm: Number(r['Headcount_ASM']) || 0,
+          rsm: Number(r['Headcount_RSM']) || 0,
+          nbdCoordinator: Number(r['Headcount_NBDCoordinator']) || 0,
+          crrCoordinator: Number(r['Headcount_CRRCoordinator']) || 0,
+        },
+        openOrders: {
+          amount: Number(r['OpenOrders_Amount']) || 0,
+          count: Number(r['OpenOrders_Count']) || 0,
+        },
+        asmRoster: roster
+      };
+    });
+
+    if(newZones.length === 0) throw new Error("The 'Zones' sheet has no data rows.");
+    return newZones;
+  }
+
+  const uploadBtn = document.getElementById('uploadBtn');
+  const fileInput = document.getElementById('fileInput');
+  const uploadStatus = document.getElementById('uploadStatus');
+
+  if(uploadBtn && fileInput){
+    uploadBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if(!file) return;
+      uploadStatus.textContent = 'Reading ' + file.name + '…';
+      uploadStatus.classList.remove('err');
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try{
+          const wb = XLSX.read(evt.target.result, {type:'array'});
+          const newZones = parseWorkbookToZones(wb);
+          zones = newZones;
+          heads = [...new Set(zones.map(z => z.head))];
+          activeHead = null;
+          zoneSubtab && Object.keys(zoneSubtab).forEach(k => delete zoneSubtab[k]);
+          zones.forEach(z => zoneSubtab[z.zone] = 'nbd');
+          renderAll();
+          uploadStatus.textContent = '✓ Loaded ' + zones.length + ' zones from ' + file.name;
+        }catch(err){
+          uploadStatus.textContent = '✗ ' + err.message;
+          uploadStatus.classList.add('err');
+        }
+      };
+      reader.onerror = () => {
+        uploadStatus.textContent = '✗ Could not read file.';
+        uploadStatus.classList.add('err');
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
